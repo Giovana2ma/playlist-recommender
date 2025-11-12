@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-config-watcher
+  namespace: giovanamachado
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-config-watcher
+  template:
+    metadata:
+      labels:
+        app: ml-config-watcher
+    spec:
+      serviceAccountName: ml-updater-sa
+      containers:
+      - name: watcher
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          #!/bin/bash
+          set -e
+          
+          echo "=== ML Config Watcher Started ==="
+          echo "Monitoring ConfigMap changes every 30 seconds..."
+          
+          LAST_HASH=""
+          
+          while true; do
+            # Get current ConfigMap hash
+            CURRENT_HASH=$(kubectl get configmap playlist-config -n giovanamachado -o yaml | sha256sum | cut -d' ' -f1)
+            
+            if [ "$LAST_HASH" != "$CURRENT_HASH" ] && [ -n "$LAST_HASH" ]; then
+              echo "=== ConfigMap changed! ==="
+              echo "Old hash: $LAST_HASH"
+              echo "New hash: $CURRENT_HASH"
+              
+              # Get dataset info
+              DATASET_NAME=$(kubectl get configmap playlist-config -n giovanamachado -o jsonpath='{.data.DATASET_NAME}')
+              TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+              JOB_NAME="ml-job-${DATASET_NAME}-${TIMESTAMP}"
+              
+              echo "Creating ML job: $JOB_NAME for dataset: $DATASET_NAME"
+              
+              # Create job from ConfigMap values
+              kubectl apply -f - <<EOF
+              apiVersion: batch/v1
+              kind: Job
+              metadata:
+                name: ${JOB_NAME}
+                namespace: giovanamachado
+                labels:
+                  app: giovanamachado-playlist-ml
+                  dataset: ${DATASET_NAME}
+                  auto-generated: "true"
+              spec:
+                ttlSecondsAfterFinished: 3600
+                template:
+                  metadata:
+                    labels:
+                      app: giovanamachado-playlist-ml
+                  spec:
+                    restartPolicy: Never
+                    containers:
+                    - name: ml-generator
+                      image: docker.io/giovana2ma/playlists-ml:0.1
+                      imagePullPolicy: IfNotPresent
+                      command: ["python3", "ruleGenerator.py"]
+                      args:
+                        - "\$(DATASET_PATH)"
+                        - "-o"
+                        - "/output/\$(MODEL_FILENAME)"
+                        - "-s"
+                        - "\$(MIN_SUPPORT)"
+                        - "-c"
+                        - "\$(MIN_CONFIDENCE)"
+                        - "-l"
+                        - "\$(MIN_LIFT)"
+                      envFrom:
+                      - configMapRef:
+                          name: playlist-config-env
+                      env:
+                      - name: DATASET_PATH
+                        valueFrom:
+                          configMapKeyRef:
+                            name: playlist-config
+                            key: DATASET_URL
+                      - name: MODEL_FILENAME
+                        valueFrom:
+                          configMapKeyRef:
+                            name: playlist-config
+                            key: MODEL_FILENAME
+                      - name: MIN_SUPPORT
+                        valueFrom:
+                          configMapKeyRef:
+                            name: playlist-config
+                            key: MIN_SUPPORT
+                      - name: MIN_CONFIDENCE
+                        valueFrom:
+                          configMapKeyRef:
+                            name: playlist-config
+                            key: MIN_CONFIDENCE
+                      - name: MIN_LIFT
+                        valueFrom:
+                          configMapKeyRef:
+                            name: playlist-config
+                            key: MIN_LIFT
+                      volumeMounts:
+                      - name: dataset-volume
+                        mountPath: /home/datasets/spotify
+                        readOnly: true
+                      - name: model-volume
+                        mountPath: /output
+                    volumes:
+                    - name: dataset-volume
+                      hostPath:
+                        path: /home/datasets/spotify
+                        type: Directory
+                    - name: model-volume
+                      persistentVolumeClaim:
+                        claimName: project2-pvc
+          EOF
+              
+              echo "✓ Job created: $JOB_NAME"
+              
+              # Wait a bit before restarting deployment
+              sleep 5
+              
+              # Restart deployment to pick up new model
+              kubectl rollout restart deployment/playlist-recommender -n giovanamachado
+              echo "✓ Deployment restart triggered"
+            fi
+            
+            LAST_HASH=$CURRENT_HASH
+            sleep 30
+          done
