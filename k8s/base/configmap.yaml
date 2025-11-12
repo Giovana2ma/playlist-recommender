@@ -10,9 +10,9 @@ data:
   MODEL_FILENAME: "rules_ds1.pkl"
   
   # Model generation parameters
-  MIN_SUPPORT: "0.01"
-  MIN_CONFIDENCE: "0.3"
-  MIN_LIFT: "1.0"
+  MIN_SUPPORT: "0.05"
+  MIN_CONFIDENCE: "0.5"
+  MIN_LIFT: "1.5"
   
   # API configuration
   API_PORT: "50013"
