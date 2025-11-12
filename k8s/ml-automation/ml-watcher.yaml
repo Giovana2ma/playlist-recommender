@@ -75,13 +75,39 @@ spec:
                       imagePullPolicy: IfNotPresent
                       command: ["/bin/sh", "-c"]
                       args:
-                        - python3 ruleGenerator.py \$DATASET_PATH
+                        - |
+                          set -e
+                          echo "Starting ML job for dataset: \$DATASET_PATH"
+                          echo "Output will be saved to: /output/\$MODEL_FILENAME"
+                          python3 ruleGenerator.py \$DATASET_PATH -o /output/\$MODEL_FILENAME -s \$MIN_SUPPORT -c \$MIN_CONFIDENCE -l \$MIN_LIFT
+                          echo "Model generated successfully!"
+                          ls -lh /output/
                       env:
                       - name: DATASET_PATH
                         valueFrom:
                           configMapKeyRef:
                             name: playlist-config
                             key: DATASET_URL
+                      - name: MODEL_FILENAME
+                        valueFrom:
+                          configMapKeyRef:
+                            name: playlist-config
+                            key: MODEL_FILENAME
+                      - name: MIN_SUPPORT
+                        valueFrom:
+                          configMapKeyRef:
+                            name: playlist-config
+                            key: MIN_SUPPORT
+                      - name: MIN_CONFIDENCE
+                        valueFrom:
+                          configMapKeyRef:
+                            name: playlist-config
+                            key: MIN_CONFIDENCE
+                      - name: MIN_LIFT
+                        valueFrom:
+                          configMapKeyRef:
+                            name: playlist-config
+                            key: MIN_LIFT
                       volumeMounts:
                       - name: dataset-volume
                         mountPath: /home/datasets/spotify
