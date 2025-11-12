@@ -8,13 +8,13 @@ FROM python:3.9-slim-bullseye
 WORKDIR /app
 
 # Copy requirements file
-COPY requirements.txt .
+COPY model/requirements.txt .
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy only the rule generation code (NOT the dataset)
-COPY ruleGenerator.py .
+COPY model/ruleGenerator.py .
 
 # Create directory for output files (rules will be saved here)
 RUN mkdir -p /output

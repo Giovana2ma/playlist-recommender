@@ -71,8 +71,8 @@ spec:
                     restartPolicy: Never
                     containers:
                     - name: ml-generator
-                      image: docker.io/giovana2ma/playlists-ml:0.1
-                      imagePullPolicy: IfNotPresent
+                      image: docker.io/giovana2ma/playlists-ml:0.2
+                      imagePullPolicy: Always
                       command: ["/bin/sh", "-c"]
                       args:
                         - |
