@@ -1,0 +1,6 @@
+# ML Container Dependencies
+# For generating association rules using Apriori algorithm
+
+pandas>=1.5.0
+mlxtend>=0.21.0
+scikit-learn>=1.1.0

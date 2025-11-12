@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playlist-recommender
+  namespace: giovanamachado
+  labels:
+    app: giovanamachado-playlist-recommender
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: giovanamachado-playlist-recommender
+  template:
+    metadata:
+      labels:
+        app: giovanamachado-playlist-recommender
+    spec:
+      containers:
+      - name: frontend
+        # Update image tag when code changes to trigger redeployment
+        image: docker.io/giovana2ma/playlists-frontend:0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 50013
+        env:
+        - name: MODEL_PATH
+          value: /model/$(MODEL_FILENAME)
+        - name: API_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: playlist-config
+              key: API_PORT
+        - name: API_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: playlist-config
+              key: API_VERSION
+        - name: MODEL_FILENAME
+          valueFrom:
+            configMapKeyRef:
+              name: playlist-config
+              key: MODEL_FILENAME
+        volumeMounts:
+        - name: model-volume
+          mountPath: /model
+      volumes:
+      - name: model-volume
+        persistentVolumeClaim:
+          claimName: project2-pvc
