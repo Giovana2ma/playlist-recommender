@@ -17,6 +17,7 @@ from pathlib import Path
 import unicodedata
 import string
 import sys
+import gc
 
 
 class RulesGenerator:
@@ -61,12 +62,22 @@ class RulesGenerator:
         Returns:
             list: List of transactions (playlists), where each transaction is a list of songs
         """
-        df = pd.read_csv(data_path)
-        df["track_name"] = df["track_name"].apply(self.normalize_track_name)
-
-        itemsets = df.groupby('pid')['track_name'].apply(list).reset_index()
-        transactions = itemsets["track_name"].values
-
+        print(f"Loading dataset from {data_path}...")
+        
+        # Read CSV in chunks to save memory
+        chunk_size = 100000
+        transactions = []
+        
+        for chunk in pd.read_csv(data_path, chunksize=chunk_size):
+            chunk["track_name"] = chunk["track_name"].apply(self.normalize_track_name)
+            itemsets = chunk.groupby('pid')['track_name'].apply(list).reset_index()
+            transactions.extend(itemsets["track_name"].values)
+            
+            # Free memory
+            del chunk, itemsets
+            gc.collect()
+        
+        print(f"Loaded {len(transactions)} playlists")
         return transactions
 
     def preprocess_transactions(self, transactions):
@@ -79,10 +90,20 @@ class RulesGenerator:
         Returns:
             pd.DataFrame: One-hot encoded transaction DataFrame
         """
+        print("Encoding transactions...")
+        
         # Use TransactionEncoder to convert to binary matrix
         te = TransactionEncoder()
         te_ary = te.fit(transactions).transform(transactions)
+        
+        # Convert to sparse DataFrame to save memory
         df = pd.DataFrame(te_ary, columns=te.columns_)
+        
+        # Free memory
+        del te_ary
+        gc.collect()
+        
+        print(f"Encoded {len(df)} transactions with {len(df.columns)} unique items")
         return df
     
     def generate_frequent_itemsets(self, df_encoded):
@@ -95,14 +116,20 @@ class RulesGenerator:
         Returns:
             pd.DataFrame: DataFrame with frequent itemsets and their support
         """
+        print(f"Generating frequent itemsets (min_support={self.min_support}, max_len={self.max_len})...")
         
-            
         self.frequent_itemsets = apriori(
             df_encoded, 
             min_support=self.min_support, 
             use_colnames=True,
-            max_len=self.max_len
+            max_len=self.max_len,
+            low_memory=True  # Use less memory
         )
+        
+        print(f"Found {len(self.frequent_itemsets)} frequent itemsets")
+        
+        # Free memory
+        gc.collect()
         
         return self.frequent_itemsets
     
@@ -118,6 +145,7 @@ class RulesGenerator:
         Returns:
             pd.DataFrame: DataFrame with association rules and their metrics
         """
+        print(f"Generating association rules (metric={metric}, min_confidence={self.min_confidence})...")
         
         if min_threshold is None:
             min_threshold = self.min_confidence if metric == 'confidence' else self.min_lift
@@ -133,6 +161,14 @@ class RulesGenerator:
             self.rules = self.rules[self.rules['confidence'] >= self.min_confidence]
         if metric != 'lift':
             self.rules = self.rules[self.rules['lift'] >= self.min_lift]
+        
+        print(f"Generated {len(self.rules)} association rules")
+        
+        # Keep only essential columns to save memory
+        self.rules = self.rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']]
+        
+        # Free memory
+        gc.collect()
         
         return self.rules
     
@@ -159,15 +195,35 @@ class RulesGenerator:
             data_path (str): Path to the Spotify dataset CSV file
             output_path (str): Path to save the generated rules (pickle file)
         """
+        print("=" * 60)
+        print("Starting ML Pipeline - Association Rules Generation")
+        print("=" * 60)
         
         transactions = self.load_spotify_transactions(data_path)
         df_encoded = self.preprocess_transactions(transactions)
         
+        # Free transactions from memory
+        del transactions
+        gc.collect()
+        
         self.generate_frequent_itemsets(df_encoded)
+        
+        # Free encoded dataframe from memory
+        del df_encoded
+        gc.collect()
+        
         self.generate_rules()
+        
+        # Free frequent itemsets from memory
+        del self.frequent_itemsets
+        gc.collect()
 
         self.save_rules(output_path)
         
+        print("=" * 60)
+        print(f"✓ Pipeline completed successfully!")
+        print(f"✓ Rules saved to: {output_path}")
+        print("=" * 60)
         
         return self.rules
 
