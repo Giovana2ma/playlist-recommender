@@ -5,9 +5,9 @@ metadata:
   namespace: giovanamachado
 data:
   # Dataset configuration - update this to switch between ds1 and ds2
-  DATASET_URL: "/home/datasets/spotify/2023_spotify_ds1.csv"
-  DATASET_NAME: "ds1"
-  MODEL_FILENAME: "rules_ds1.pkl"
+  DATASET_URL: "/home/datasets/spotify/2023_spotify_ds2.csv"
+  DATASET_NAME: "ds2"
+  MODEL_FILENAME: "rules_ds2.pkl"
   
   # Model generation parameters
   MIN_SUPPORT: "0.05"
