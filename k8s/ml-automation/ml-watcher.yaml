@@ -108,6 +108,11 @@ spec:
                           configMapKeyRef:
                             name: playlist-config
                             key: MIN_LIFT
+                      resources:
+                        limits:
+                          memory: "1Gi"
+                        requests:
+                          memory: "1Gi"
                       volumeMounts:
                       - name: dataset-volume
                         mountPath: /home/datasets/spotify
