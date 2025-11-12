@@ -208,6 +208,44 @@ def recommend():
         }), 500
 
 
+@app.route('/api/health', methods=['GET'])
+def health():
+    """
+    Health check endpoint for Kubernetes probes.
+    Returns 200 if the service is healthy and model is loaded.
+    """
+    if app.model_data is None:
+        return jsonify({
+            'status': 'unhealthy',
+            'reason': 'Model not loaded'
+        }), 503
+    
+    return jsonify({
+        'status': 'healthy',
+        'version': VERSION,
+        'model_date': app.model_date,
+        'model_rules': len(app.model_data) if app.model_data is not None else 0
+    }), 200
+
+
+@app.route('/api/stats', methods=['GET'])
+def stats():
+    """
+    Statistics endpoint showing model information.
+    """
+    if app.model_data is None:
+        return jsonify({
+            'error': 'Model not loaded'
+        }), 503
+    
+    return jsonify({
+        'version': VERSION,
+        'model_date': app.model_date,
+        'total_rules': len(app.model_data),
+        'avg_confidence': float(app.model_data['confidence'].mean()) if len(app.model_data) > 0 else 0,
+        'avg_lift': float(app.model_data['lift'].mean()) if len(app.model_data) > 0 else 0,
+        'port': PORT
+    }), 200
 
 
 # Initialize the application

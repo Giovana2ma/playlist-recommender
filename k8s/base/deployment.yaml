@@ -26,8 +26,13 @@ spec:
         ports:
         - containerPort: 50013
         env:
+        - name: MODEL_FILENAME
+          valueFrom:
+            configMapKeyRef:
+              name: playlist-config
+              key: MODEL_FILENAME
         - name: MODEL_PATH
-          value: /model/$(MODEL_FILENAME)
+          value: /model/rules_ds1.pkl
         - name: API_PORT
           valueFrom:
             configMapKeyRef:
@@ -38,11 +43,6 @@ spec:
             configMapKeyRef:
               name: playlist-config
               key: API_VERSION
-        - name: MODEL_FILENAME
-          valueFrom:
-            configMapKeyRef:
-              name: playlist-config
-              key: MODEL_FILENAME
         volumeMounts:
         - name: model-volume
           mountPath: /model
