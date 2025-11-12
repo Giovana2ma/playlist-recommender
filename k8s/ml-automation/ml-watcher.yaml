@@ -33,10 +33,15 @@ spec:
             # Get current ConfigMap hash
             CURRENT_HASH=$(kubectl get configmap playlist-config -n giovanamachado -o yaml | sha256sum | cut -d' ' -f1)
             
-            if [ "$LAST_HASH" != "$CURRENT_HASH" ] && [ -n "$LAST_HASH" ]; then
-              echo "=== ConfigMap changed! ==="
-              echo "Old hash: $LAST_HASH"
-              echo "New hash: $CURRENT_HASH"
+            # Create job if ConfigMap changed OR if this is the first run
+            if [ "$LAST_HASH" != "$CURRENT_HASH" ]; then
+              if [ -z "$LAST_HASH" ]; then
+                echo "=== Initial run - Creating first ML job ==="
+              else
+                echo "=== ConfigMap changed! ==="
+                echo "Old hash: $LAST_HASH"
+                echo "New hash: $CURRENT_HASH"
+              fi
               
               # Get dataset info
               DATASET_NAME=$(kubectl get configmap playlist-config -n giovanamachado -o jsonpath='{.data.DATASET_NAME}')
