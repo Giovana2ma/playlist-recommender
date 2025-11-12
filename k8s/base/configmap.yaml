@@ -16,4 +16,4 @@ data:
   
   # API configuration
   API_PORT: "50013"
-  API_VERSION: "1.0.0"
+  API_VERSION: "2.0.0"

@@ -21,7 +21,7 @@ spec:
       containers:
       - name: frontend
         # Update image tag when code changes to trigger redeployment
-        image: docker.io/giovana2ma/playlists-frontend:0.1
+        image: docker.io/giovana2ma/playlists-frontend:0.2
         imagePullPolicy: Always
         ports:
         - containerPort: 50013
