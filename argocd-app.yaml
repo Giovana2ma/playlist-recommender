@@ -12,7 +12,7 @@ spec:
     # IMPORTANT: Update this to your Git repository URL
     repoURL: https://github.com/Giovana2ma/playlist-recommender.git
     targetRevision: HEAD  # Can also use a specific branch, tag, or commit
-    path: .  # Path to Kubernetes manifests (use . if in root directory)
+    path: k8s  # Path to Kubernetes manifests
   
   # Destination cluster and namespace
   destination:
