@@ -38,7 +38,7 @@ def analyze_results(json_file):
     print("=" * 80)
     
     # Basic statistics
-    print(f"\nTest Duration: {summary['duration_seconds']/60:.2f} minutes")
+    print(f"\nTest Duration: {test_info['duration_seconds']/60:.2f} minutes")
     print(f"Total Requests: {summary['total_requests']}")
     print(f"Success Rate: {summary['success_rate']*100:.2f}%")
     print(f"Errors: {summary['errors']}")

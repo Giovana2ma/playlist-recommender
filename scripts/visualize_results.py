@@ -181,7 +181,8 @@ def plot_comparison_bar(json_files, output_file):
         
         # Extract metrics
         summary = data['summary']
-        deployment_times.append(summary['duration_seconds'] / 60)  # Convert to minutes
+        test_info = data['test_info']
+        deployment_times.append(test_info['duration_seconds'] / 60)  # Convert to minutes
         downtimes.append(summary['downtime_seconds'])
         success_rates.append(summary['success_rate'] * 100)
     
